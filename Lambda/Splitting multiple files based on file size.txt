@@ -1,0 +1,71 @@
+import boto3
+import pandas as pd
+import urllib
+import json
+import io
+import os
+ 
+def lambda_handler(event, context):
+   
+    try:
+        
+      for record in event['Records']:
+        #Getting the source bucket and key from the event 
+        
+        source_bucket = record['s3']['bucket']['name']
+        source_key = urllib.parse.unquote_plus(record['s3']['object']['key'])
+        
+        #source_bucket = 'inp-task2'
+        #source_key = 'Random.csv'
+        
+        #Setting the destina tion bucket to another position to avoid recursion.
+        Dest_bucket = 'opt-task2'
+        print("source_bucket =", source_bucket)
+        print("source_key =", source_key)
+        
+        s3_client=boto3.client('s3')
+        obj= s3_client.get_object(Bucket=source_bucket, Key= source_key)
+        file_stream= obj["Body"]
+        df = pd.read_csv(io.BytesIO(obj['Body'].read()),header=None)
+        
+        #s3 = boto3.client('s3')
+        response = s3_client.head_object(Bucket= source_bucket, Key= source_key)
+        sizee = response['ContentLength']
+        print(sizee)
+        
+        #record_size = 4
+        
+        if (sizee>=1000  and  sizee<10000 ):
+                record_size = 10
+        elif (sizee>=10000  and sizee<20000):
+                record_size = 30
+        elif (sizee>=20000  and sizee<50000):
+                record_size = 50
+        elif (sizee>=50000  and sizee<80000):
+                record_size = 75
+        elif (sizee>=80000  and sizee<100000):
+                record_size = 90
+                
+        else:  record_size = 100
+        
+        
+        slabs = [df[i:i + record_size] for i in range (0, df.shape[0],record_size)]
+        print(type(slabs))
+
+        for i, chunk in enumerate(slabs):
+             chunk.to_csv("/tmp/temp.csv", index=False)
+
+             s3_client.upload_file("/tmp/temp.csv", Dest_bucket, 'output/'+f"chunk_{i}.csv")
+             
+    except KeyError :
+        print("TypeError has occured ")
+    
+        
+    except Exception :
+        print("NameError has occured ")
+
+
+     
+             
+
+

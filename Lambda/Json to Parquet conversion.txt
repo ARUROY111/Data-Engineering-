@@ -1,0 +1,33 @@
+import json
+import pandas as pd
+import boto3
+import urllib
+
+s3 = boto3.client('s3')
+s3_resource = boto3.resource('s3')
+
+try:
+    def lambda_handler(event, context):
+        for record in event['Records']:
+            
+            # Read the JSON file from S3
+            bucket_name = record['s3']['bucket']['name']
+            file_key = urllib.parse.unquote_plus(record['s3']['object']['key'])
+            dest_bkt = 'jso-par-opt'
+
+            s3_object = s3.get_object(Bucket=bucket_name, Key=file_key)
+            json_data = s3_object['Body'].read().decode('utf-8')
+            df = pd.DataFrame([pd.read_json(json_data, typ='series')])
+
+            # Convert the JSON data to Parquet format
+            parquet_data = df.to_parquet(index=False)
+            parquet_key = 'output.parquet'
+
+            print('parquet file is created')
+            # s3_resource.put_object(Bucket=dest_bkt, Key=parquet_key, Body=parquet_data)
+            s3_resource.Object(dest_bkt, parquet_key).put(Body=parquet_data)
+            print('parquet file is saved')
+
+except (ValueError, TypeError):
+    print("ValueError for the lambda ")
+    print("TypeError for the lambda ")
