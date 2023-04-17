@@ -1,0 +1,25 @@
+import io
+import pandas as pd
+import urllib.parse
+import sys
+import boto3
+
+from awsglue.context import GlueContext
+from awsglue.dynamicframe import DynamicFrame
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from pyspark.sql import SparkSession
+from awsglue.transforms import *
+from pyspark.sql.session import SparkSession
+
+
+from pyspark import SparkContext
+
+# Create a Spark and Glue context
+sc = SparkContext()
+spark = SparkSession.builder.appName('s3-transfer').getOrCreate()
+
+# Read data from the source S3 bucket
+src_df = spark.read.format("csv").option("header", "true").load("s3://csv-par-inp/customer.csv", inferSchema='true')
+
+src_df.printSchema()

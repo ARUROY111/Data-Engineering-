@@ -1,0 +1,49 @@
+import boto3
+import io
+import pandas as pd
+import urllib.parse
+import sys
+
+from awsglue.context import GlueContext
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from pyspark.sql import SparkSession
+
+s3 = boto3.client('s3')
+s3_resource = boto3.resource('s3')
+
+# Create a Glue context and Spark session
+glueContext = GlueContext(SparkContext.getOrCreate())
+spark = glueContext.spark_session
+
+# Retrieve the input file from the Glue arguments
+#args = getResolvedOptions(sys.argv, ['JOB_NAME', 'Bucket'])
+bucket_name = 'jso-par-inp'
+file_key = 'example_1.json'
+
+# Set the S3 bucket where the output file will be stored
+dest_bkt = 'jso-par-opt'
+
+# Set the name of the output file (with .parquet extension)
+parquet_key = 'Anything.parquet'
+
+# Read the CSV file from S3 into a PySpark DataFrame
+s3_object = s3.get_object(Bucket=bucket_name, Key=file_key)
+json_data = s3_object['Body'].read().decode('utf-8')
+# df1 = pd.read_json(json_data, lines=True, orient='records')
+# with open(json_data, 'r') as f:
+# df2 = json.load(df1)
+# df = pd.DataFrame({'count': df1})
+df = pd.DataFrame([pd.read_json(json_data, typ='series')])
+#csv_object = s3.Object(source_bucket, source_key).get()
+#df = pd.read_csv(io.StringIO(csv_object['Body'].read().decode('utf-8')))
+#spark_df = spark.createDataFrame(df)
+
+# Convert the JSON data to Parquet format
+parquet_data = df.to_parquet(index=False)
+
+
+# Write the PySpark DataFrame to Parquet format and save to S3
+s3_resource.Object(dest_bkt, parquet_key).put(Body=parquet_data)
+# s3_resource.put_object(Bucket=dest_bkt, Key=parquet_key, Body=parquet_data)
+#spark_df.write.mode("overwrite").parquet("s3://{}/{}".format(output_bucket, output_file))

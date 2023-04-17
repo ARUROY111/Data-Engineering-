@@ -1,0 +1,44 @@
+import boto3
+import io
+import pandas as pd
+import urllib.parse
+import sys
+
+from pyspark.sql.functions import lit
+from awsglue.context import GlueContext
+from awsglue.dynamicframe import DynamicFrame
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from pyspark.sql import SparkSession
+from awsglue.transforms import *
+
+from pyspark import SparkContext
+
+s3 = boto3.client('s3')
+
+sc = SparkContext.getOrCreate()
+gc = GlueContext(sc)
+
+dynamic_frame = gc.create_dynamic_frame_from_options(
+	connection_type="s3",
+	connection_options={
+	"paths": ['s3://d-frame-inp/customer.csv']
+	},
+	format="csv",
+	format_options={
+	"withHeader": True,
+	}
+)
+
+#dynamic_frame.printSchema()
+#dynamic_frame.show()
+#dynamic_frame.toDF().show()
+
+# Perform transformations using withColumn and withColumnRenamed
+#dynamic_frame
+dynamic_frame=dynamic_frame.withColumn("Country",lit("India"))
+#dynamic_frame.show()
+dynamic_frame=dynamic_frame.withColumnRenamed("LastName","LLastName")
+
+#dynamic_frame.toDF().show()
+dynamic_frame.show()

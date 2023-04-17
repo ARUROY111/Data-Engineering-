@@ -1,0 +1,33 @@
+import io
+import pandas as pd
+import urllib.parse
+import sys
+import boto3
+
+from awsglue.context import GlueContext
+from awsglue.dynamicframe import DynamicFrame
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from pyspark.sql import SparkSession
+from awsglue.transforms import *
+from pyspark.sql.session import SparkSession
+
+
+from pyspark import SparkContext
+
+# Create a Spark and Glue context
+sc = SparkContext()
+spark = SparkSession.builder.appName('s3-transfer').getOrCreate()
+
+# Read data from the source S3 bucket
+src_df = spark.read.format("csv").option("header", "true").load("s3://csv-par-inp/customer.csv")
+
+# Perform transformations on the data if required
+# For example, you can filter data using the filter() method:
+# filtered_df = src_df.filter(src_df['column_name'] == 'value')
+
+# Write the transformed data to the destination S3 bucket
+src_df.write.format("csv").option("header", "true").mode("overwrite").save("s3://csv-par-opt/output/")
+
+# Stop the Spark context
+sc.stop()

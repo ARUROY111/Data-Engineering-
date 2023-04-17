@@ -1,0 +1,54 @@
+import boto3
+import io
+import pandas as pd
+import urllib.parse
+import sys
+
+from pyspark.sql.functions import col
+from pyspark.sql.functions import lit
+from awsglue.context import GlueContext
+from awsglue.dynamicframe import DynamicFrame
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from pyspark.sql import SparkSession
+from awsglue.transforms import *
+
+from pyspark import SparkContext
+
+s3 = boto3.client('s3')
+
+sc = SparkContext.getOrCreate()
+gc = GlueContext(sc)
+spark = SparkSession(sc)
+
+
+# Define the data to be included in the dataframe
+data = [(1 ,"Alice", 25), (2 ,"Bob", 30), (3 ,"Charlie", 35), (4 ,"Bob", 30), (5 ,"Charlie", 35)]
+
+# Create a dataframe from the data using Spark
+data_frame = spark.createDataFrame(data, ["ID","Name","Age"])
+data_frame.createOrReplaceTempView("Detial")
+
+#Detial.show()
+
+data_frame.show()
+
+# Define the data to be included in the dataframe
+data1 = [(1 ,"India", "Mando"), (2 ,"Bolivia", "Bido"), (3 ,"Chile", "Muba"), (4 ,"Afganishthan", "Limo"), (5 ,"Pakistan", "Didi")]
+
+# Create a dataframe from the data using Spark
+data_frame1 = spark.createDataFrame(data1, ["ID","Country","LastName"])
+data_frame1.createOrReplaceTempView("Muga")
+
+#Muga.show()
+
+data_frame1.show()
+
+query = """
+SELECT Name,Age,Country,LastName,Muga.ID
+FROM Detial
+JOIN Muga ON Detial.ID = Muga.ID 
+"""
+joined_df = spark.sql(query)
+
+joined_df.show()

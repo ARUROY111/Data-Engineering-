@@ -1,0 +1,27 @@
+import boto3
+import io
+import pandas as pd
+import urllib.parse
+import sys
+
+from awsglue.context import GlueContext
+from awsglue.dynamicframe import DynamicFrame
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from pyspark.sql import SparkSession
+from awsglue.transforms import *
+
+from pyspark import SparkContext
+
+s3 = boto3.client('s3')
+
+sc = SparkContext.getOrCreate()
+gc = GlueContext(sc)
+
+table = gc.create_dynamic_frame.from_options("dynamodb",connection_options={"dynamodb.input.tableName":"Student"})
+
+Table = table.toDF()
+
+Table.write.format("csv").option("header", "true").mode("overwrite").save("s3://csv-par-opt/Dynamodb/")
+
+#table.show()

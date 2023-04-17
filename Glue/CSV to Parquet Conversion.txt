@@ -1,0 +1,35 @@
+import boto3
+import io
+import pandas as pd
+import urllib.parse
+import sys
+
+from awsglue.context import GlueContext
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from pyspark.sql import SparkSession
+
+s3 = boto3.resource('s3')
+
+# Create a Glue context and Spark session
+glueContext = GlueContext(SparkContext.getOrCreate())
+spark = glueContext.spark_session
+
+# Retrieve the input file from the Glue arguments
+#args = getResolvedOptions(sys.argv, ['JOB_NAME', 'Bucket'])
+source_bucket = 'csv-par-inp'
+source_key = 'annual-balance-sheets-2007-2021-provisional.csv'
+
+# Set the S3 bucket where the output file will be stored
+output_bucket = 'csv-par-opt'
+
+# Set the name of the output file (with .parquet extension)
+output_file = 'Anything.parquet'
+
+# Read the CSV file from S3 into a PySpark DataFrame
+csv_object = s3.Object(source_bucket, source_key).get()
+df = pd.read_csv(io.StringIO(csv_object['Body'].read().decode('utf-8')))
+spark_df = spark.createDataFrame(df)
+
+# Write the PySpark DataFrame to Parquet format and save to S3
+spark_df.write.mode("overwrite").parquet("s3://{}/{}".format(output_bucket, output_file))

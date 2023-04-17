@@ -1,0 +1,59 @@
+import boto3
+import io
+import pandas as pd
+import urllib.parse
+import sys
+
+from awsglue.context import GlueContext
+from awsglue.dynamicframe import DynamicFrame
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from pyspark.sql import SparkSession
+from awsglue.transforms import *
+
+from pyspark import SparkContext
+
+s3 = boto3.client('s3')
+
+sc = SparkContext.getOrCreate()
+gc = GlueContext(sc)
+
+dynamic_frame = gc.create_dynamic_frame_from_options(
+	connection_type="s3",
+	connection_options={
+	"paths": ['s3://d-frame-inp/customer.csv']
+	},
+	format="csv",
+	format_options={
+	"withHeader": True,
+	}
+)
+
+dynamic_frame.printSchema()
+#dynamic_frame.show()
+
+
+# Changing the data types of certain columns
+dynamic_frame = ApplyMapping.apply(
+frame=dynamic_frame,
+mappings=[
+("customerid", "bigint", "customerid", "int"),
+("namestyle", "boolean", "namestyle", "string"),
+("title", "string", "title", "double"),
+("firstname", "string", "firstname", "double"),
+("phone", "string", "phone", "double")
+]
+)
+
+dynamic_frame.printSchema()
+
+# Convert the DynamicFrame to Parquet
+parquet_dynamic_frame = gc.write_dynamic_frame.from_options(
+frame=dynamic_frame,
+connection_type="s3",
+connection_options={
+"path": f's3://d-frame-opt/output/'
+},
+format="parquet"
+)
+
