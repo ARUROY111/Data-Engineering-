@@ -1,1 +1,24 @@
 
+// Sample Unload script.
+
+
+-- Define the S3 bucket and file path for the unload
+SET unload_bucket = 's3://your-bucket-name/';
+SET unload_path = 'unload/';
+
+-- Define the table name and unload query
+SET table_name = 'your_table_name';
+SET unload_query = 'SELECT * FROM ' || table_name;
+
+-- Generate a unique file name for the unload
+SET file_name = table_name || '_' || GETDATE() || '.csv';
+
+-- Build the unload command
+SET unload_command = 'UNLOAD (' || unload_query || ') TO ''' || unload_bucket || unload_path || file_name || ''' '
+                     || 'IAM_ROLE ''your-iam-role'' '
+                     || 'DELIMITER '','' '
+                     || 'ALLOWOVERWRITE '
+                     || 'GZIP';
+
+-- Execute the unload command
+EXECUTE unload_command;
