@@ -1,0 +1,42 @@
+{
+	"jobConfig": {
+		"name": "Hudi-upsert",
+		"description": "",
+		"role": "arn:aws:iam::146574014488:role/Glueee",
+		"command": "glueetl",
+		"version": "3.0",
+		"runtime": null,
+		"workerType": "G.1X",
+		"numberOfWorkers": 2,
+		"maxCapacity": 2,
+		"maxRetries": 0,
+		"timeout": 10,
+		"maxConcurrentRuns": 1,
+		"security": "none",
+		"scriptName": "Hudi-upsert.py",
+		"scriptLocation": "s3://aws-glue-assets-146574014488-us-east-2/scripts/",
+		"language": "python-3",
+		"jobParameters": [],
+		"tags": [],
+		"jobMode": "DEVELOPER_MODE",
+		"createdOn": "2023-06-27T08:05:17.709Z",
+		"developerMode": true,
+		"connectionsList": [
+			"Apache Hudi Connector 0.10.1-2 for AWS Glue 3.0",
+			"Hudi-1"
+		],
+		"temporaryDirectory": "s3://aws-glue-assets-146574014488-us-east-2/temporary/",
+		"logging": true,
+		"glueHiveMetastore": true,
+		"etlAutoTuning": true,
+		"metrics": true,
+		"spark": true,
+		"bookmark": "job-bookmark-disable",
+		"sparkPath": "s3://aws-glue-assets-146574014488-us-east-2/sparkHistoryLogs/",
+		"flexExecution": false,
+		"minFlexWorkers": null,
+		"pythonPath": null
+	},
+	"hasBeenSaved": false,
+	"script": "from pyspark.sql import SparkSession\r\nfrom pyspark.sql.functions import col\r\nfrom pyspark.sql.types import StructType, StructField, StringType, IntegerType\r\nfrom pyspark.sql import Row\r\n\r\n# Initialize SparkSession\r\n#spark = SparkSession.builder.appName(\"HudiUpsertExample\").getOrCreate()\r\nspark = SparkSession.builder.config('spark.serializer', 'org.apache.spark.serializer.KryoSerializer').config('spark.sql.hive.convertMetastoreParquet', 'false').getOrCreate()\r\n\r\n# Define schema for the dataset\r\nschema = StructType([\r\n    StructField(\"id\", IntegerType(), True),\r\n    StructField(\"name\", StringType(), True),\r\n    StructField(\"age\", IntegerType(), True)\r\n])\r\n\r\n# Specify the upsert operation\r\nhudi_options = {\r\n    'hoodie.table.name': 'Age-table',\r\n    'hoodie.datasource.write.recordkey.field': 'id',\r\n    'hoodie.datasource.write.precombine.field': 'age',\r\n    'hoodie.datasource.write.operation': 'upsert',\r\n    'hoodie.upsert.shuffle.parallelism': '2'  # Number of parallelism for upsert\r\n}\r\n\r\n# Read the upsert data\r\nupsert_data = [\r\n    Row(id=1, name=\"John\", age=25),\r\n    Row(id=2, name=\"Jane\", age=30),\r\n    Row(id=3, name=\"Jme\", age=36),\r\n    Row(id=4, name=\"Dame\", age=38)\r\n]\r\n\r\ndf = spark.createDataFrame(spark.sparkContext.parallelize(upsert_data), schema)\r\n\r\n# Perform the upsert operation\r\ndf.write.format(\"hudi\"). \\\r\n    options(**hudi_options). \\\r\n    mode(\"append\"). \\\r\n    save(\"s3://webbktt/Hudi /\")\r\n\r\n# Stop the SparkSession\r\nspark.stop()"
+}
